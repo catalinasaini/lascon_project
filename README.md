@@ -1,5 +1,5 @@
 # A thalamocortical model of post-sleep memory improvement
-Bruna V. Tiburcio1, Catalina A. C. Ferro ́n2 and Flavio R. Rusch3
+Bruna V. Tiburcio 1, Catalina Saini 2 and Flavio R. Rusch 3
 (1) Federal University of Rio de Janeiro, Rio de Janeiro, RJ, Brazil. 
 (2) Pontifical Catholic University of Chile, Santiago, Chile. 
 (3) Department of Physics, FFCLRP, University of Sao Paulo, Ribeirao Preto, SP, Brazil.
