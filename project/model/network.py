@@ -51,7 +51,7 @@ class Network:
         
         # Connect populations with STDP synapses
         self.W_MAX_CXCX = 15                        # Max weight value fo the cx-cx connection: 150. I've changed to 15 to make it run for the tests.     
-        self.W_MAX_CXTC = 13                        # Max weight value fo the cx-tc connection: 130 I've changed to 13 to make it run for the tests.
+        self.W_MAX_CXTC = 3                        # Max weight value fo the cx-tc connection: 130 I've changed to 13 to make it run for the tests.
         self.W_MAX_TCCX = 5.5                        # Max weight value fo the tc-cx connection 
         self.syn_alpha = 1.0
 
