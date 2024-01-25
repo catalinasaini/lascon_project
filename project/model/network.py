@@ -45,6 +45,9 @@ class Network:
         self.RE_N = 200
         self.cx_n = cx_population    # Groups of 20 neurons for each image in the training set. In a first set of runs, the training set was composed of 9 images.
 
+        # Declate set of cx neurons
+        self.SET_CX_NEURON = 20          # Groups of 20 neurons for each image in the training set.
+        
         # Declare Poisson generators signals
         self.context_sign = None
         self.inhib_sign = None
@@ -102,7 +105,7 @@ class Network:
         nest.Connect(self.cx_pop, self.TC_POP, syn_spec=self.syn_dict_cxtc)         # Cx -> Tc
         nest.Connect(self.TC_POP, self.cx_pop, syn_spec=self.syn_dict_tccx)         # TC -> Cx
     
-    def input_contextual_signal(self, neuron_group_id=1):
+    def input_context_signal(self, neuron_group):
         """
         Every time a new training image is presented to the network through the thalamic pathway, the facilitation signal 
         coming from the contextual signal provides a 2 kHz Poisson spike train to a different set of 20 neurons, inducing 
@@ -115,27 +118,27 @@ class Network:
         :param type: int
         """
         # Declare variables
-        SET_NEURONS = 20                # Number of population
         CONTEXT_RATE = 2000.0        # Hz
+        SIGN_DUR = 450               # Duration of contextual signal in ms
         WEIGHT_SIGN_CX = 15          # Weight of connection between contextual signal and cx population
         
         # Define set of neurons
-        size_group = SET_NEURONS * neuron_group_id
+        size_group = self.SET_CX_NEURON * neuron_group
         
-        assert (size_group <= self.cx_n), f"Type a value between 1 and {int(self.cx_n/SET_NEURONS)}."
-        assert (neuron_group_id > 0), f"Type a value between 1 and {int(self.cx_n/SET_NEURONS)}."
-        assert isinstance(neuron_group_id, int), "Type an int value."
+        assert (size_group <= self.cx_n), f"Type a value between 1 and {int(self.cx_n//self.SET_CX_NEURON)}."
+        assert (neuron_group > 0), f"Type a value between 1 and {int(self.cx_n//self.SET_CX_NEURON)}."
+        assert isinstance(neuron_group, int), "Type an int value."
         
         # Define slicing
-        end_slice =  SET_NEURONS * neuron_group_id
-        start_slice = end_slice - SET_NEURONS    
+        end_slice =  self.SET_CX_NEURON * neuron_group
+        start_slice = end_slice - self.SET_CX_NEURON    
         
         # Generate contextual signal
         print("Generating contextual signal...")
         self.context_sign = nest.Create("poisson_generator")
         
         # Set frequencies
-        self.context_sign.set(rate=CONTEXT_RATE)
+        self.context_sign.set(rate=CONTEXT_RATE, stop=SIGN_DUR)
         print("... done.")
         
         # Connect them to the neurons
@@ -143,7 +146,7 @@ class Network:
         nest.Connect(self.context_sign, self.cx_pop[start_slice:end_slice], syn_spec={"weight": WEIGHT_SIGN_CX})
         
         # Display connection
-        print("... contextual signal successfully connected to the cx population.")           
+        print("... contextual signal successfully connected to the cx population.")      
     
     def input_inhib_signal(self):
         """
@@ -154,15 +157,16 @@ class Network:
         """
         # Declare variables
         INHIB_RATE = 10000.0           # Hz
-        WEIGHT_INH_IN = 5            # Weight of inhibitory signal to in population
+        SIGN_DUR = 450                 # Duration of inhibitory signal in ms
+        WEIGHT_INH_IN = 5              # Weight of inhibitory signal to in population
         
         # Generate inhibitory signal
         print("Generating inhibitory signal...")
         self.inhib_sign = nest.Create("poisson_generator")
         
         # Set frequencies
-        self.inhib_sign.set(rate=INHIB_RATE)
-        print("...done.")
+        self.inhib_sign.set(rate=INHIB_RATE, stop=SIGN_DUR)
+        print("...done.")     
         
         # Connect them to the neurons
         print("Connecting input to the in population...")
@@ -182,7 +186,6 @@ class Network:
         TRAIN_RATE = 30000.0                                                # Hz
         SIGN_DUR = 450.0                                                      # Duration of training signal in ms
         WEIGHT_TRAIN_TC = 5                                                 # Weight of Poisson to tc population
-        first_id = nest.GetStatus(self.TC_POP[0], keys='global_id')[0]      # First id of tc population to start iteration
         
         # Generate training signal
         print("Generating training signal...")
@@ -251,7 +254,20 @@ class Network:
         
         # Display connection
         print("... sleep oscillation signal successfully inputed to the cx and in populations (i.e., whole cortex).")
-     
+    
+    def disconnect_input(self, poisson_input, neuron_group):
+        # Define set of neurons
+        size_group = self.SET_CX_NEURON * neuron_group
+        
+        assert (size_group <= self.cx_n), f"Type a value between 1 and {int(self.cx_n//self.SET_CX_NEURON)}."
+        assert (neuron_group > 0), f"Type a value between 1 and {int(self.cx_n//self.SET_CX_NEURON)}."
+        assert isinstance(neuron_group, int), "Type an int value."
+        
+        # Define slicing
+        end_slice =  self.SET_CX_NEURON * neuron_group
+        start_slice = end_slice - self.SET_CX_NEURON  
+        
+        nest.Disconnect(poisson_input, self.cx_pop[start_slice:end_slice])       
    
     def set_multimeters(self):
         """
