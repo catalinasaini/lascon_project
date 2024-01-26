@@ -49,7 +49,7 @@ class Network:
         self.SET_CX_NEURON = 20          # Groups of 20 neurons for each image in the training set.
         
         # Declare Poisson generators signals
-        self.context_sign = None
+        #self.context_sign = None
         self.inhib_sign = None
         self.train_sign = None
         self.sleep_osc = None
@@ -105,6 +105,40 @@ class Network:
         nest.Connect(self.cx_pop, self.TC_POP, syn_spec=self.syn_dict_cxtc)         # Cx -> Tc
         nest.Connect(self.TC_POP, self.cx_pop, syn_spec=self.syn_dict_tccx)         # TC -> Cx
     
+    def create_context_signal(self, time_id): 
+        """
+        Create the contextual signal using Poissan generator.
+        
+        :param time_id: it defines the start time of the Poisson signal. For example, time_id = 0 makes the signal starts at 0.
+                        time_id = 1 makes it start after 900 ms, i.e., the duration of the signal plus a quiescent period.
+        :type: int
+
+        Returns:
+            Obj: returns the Poissan generator object.
+        """
+        # Assert argument is valid
+        assert (time_id <= self.cx_n//self.SET_CX_NEURON), f"Type a value between 0 and {int(self.cx_n//self.SET_CX_NEURON)}."
+        assert (time_id >= 0), f"Type a value higher than 0."
+        assert isinstance(time_id, int), "Type an int value."
+        
+        # Declare variables
+        CONTEXT_RATE = 2000.0                       # Hz
+        SIGN_DUR = 450                              # Duration of contextual signal in ms
+        time_start = time_id * SIGN_DUR * 2
+        time_stop = time_start + SIGN_DUR           # Set time stop of Poisson generator
+        
+        # Generate contextual signal
+        context_sign = nest.Create("poisson_generator")
+        
+        # Set frequencies
+        context_sign.set(rate=CONTEXT_RATE, start=time_start, stop=time_stop)
+        
+        # Display result
+        print("Contextual signal successfully created.")
+                
+        #  Return Pooisson generator
+        return context_sign
+    
     def input_context_signal(self, neuron_group):
         """
         Every time a new training image is presented to the network through the thalamic pathway, the facilitation signal 
@@ -114,39 +148,33 @@ class Network:
         Turned off during the retrieval phase.
         
         :param neuron_group_id: Parameter that defines the slicing of the cx population. For example, neuron_group_id=1 slices 
-                                from 0:20; neuron_group_id=2 slices from 20:40.
+                                from 0:20; neuron_group_id=2 slices from 20:40. Also, it defines the time_id for the function 
+                                create_context_signal, since we are inputting different-time signals to the sliced neuronal populations.
         :param type: int
         """
         # Declare variables
-        CONTEXT_RATE = 2000.0        # Hz
-        SIGN_DUR = 450               # Duration of contextual signal in ms
         WEIGHT_SIGN_CX = 15          # Weight of connection between contextual signal and cx population
         
         # Define set of neurons
         size_group = self.SET_CX_NEURON * neuron_group
         
-        assert (size_group <= self.cx_n), f"Type a value between 1 and {int(self.cx_n//self.SET_CX_NEURON)}."
-        assert (neuron_group > 0), f"Type a value between 1 and {int(self.cx_n//self.SET_CX_NEURON)}."
+        assert (size_group <= self.cx_n), f"Type a value between 0 and {int(self.cx_n//self.SET_CX_NEURON)}."
+        assert (neuron_group >= 0), f"Type a value between 0 and {int(self.cx_n//self.SET_CX_NEURON)}."
         assert isinstance(neuron_group, int), "Type an int value."
         
         # Define slicing
-        end_slice =  self.SET_CX_NEURON * neuron_group
-        start_slice = end_slice - self.SET_CX_NEURON    
+        start_slice = neuron_group * self.SET_CX_NEURON
+        end_slice =  start_slice + self.SET_CX_NEURON
         
-        # Generate contextual signal
-        print("Generating contextual signal...")
-        self.context_sign = nest.Create("poisson_generator")
-        
-        # Set frequencies
-        self.context_sign.set(rate=CONTEXT_RATE, stop=SIGN_DUR)
-        print("... done.")
+        # Get contextual signal
+        context_sign = self.create_context_signal(neuron_group)
         
         # Connect them to the neurons
         print("Connecting input to the cx population...")
-        nest.Connect(self.context_sign, self.cx_pop[start_slice:end_slice], syn_spec={"weight": WEIGHT_SIGN_CX})
+        nest.Connect(context_sign, self.cx_pop[start_slice:end_slice], syn_spec={"weight": WEIGHT_SIGN_CX})
         
         # Display connection
-        print("... contextual signal successfully connected to the cx population.")      
+        print("... contextual signal successfully connected to the cx population.")
     
     def input_inhib_signal(self):
         """
