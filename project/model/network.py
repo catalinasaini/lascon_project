@@ -189,7 +189,7 @@ class Network:
         # Declare variables
         TRAIN_RATE = 30000.0                        # Hz
         SIGN_DUR = 650                              # Duration of training signal in ms
-        time_start = time_id * SIGN_DUR * 2
+        time_start = time_id * SIGN_DUR * 1.5
         time_stop = time_start + SIGN_DUR           # Set time stop of Poisson generator
         
         # Generate training signal
