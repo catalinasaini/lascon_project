@@ -162,7 +162,7 @@ class Network:
             context_sign = nest.Create("poisson_generator")
             
             # Set frequencies
-            context_sign.set(rate=INIT_RATE)
+            nest.SetStatus(context_sign, {'rate': INIT_RATE})
             
             # Connect them to the neurons
             nest.Connect(context_sign, self.cx_pop[start_slice:end_slice], syn_spec={"weight": WEIGHT_SIGN_CX})
@@ -179,7 +179,7 @@ class Network:
         
         if signal_type == 'contextual':
             context_sign = self.contextual_list[list_index]
-            context_sign.set(rate=CONTEXT_RATE)
+            nest.SetStatus(context_sign, {'rate': CONTEXT_RATE})
 
     def switch_input_off(self, list_index, signal_type):
         # Declare variables
@@ -187,7 +187,7 @@ class Network:
         
         if signal_type == 'contextual':
             context_sign = self.contextual_list[list_index]
-            context_sign.set(rate=OFF_RATE)
+            nest.SetStatus(context_sign, {'rate': OFF_RATE})
     
     def create_inhib_signal(self, time_id): 
         """
@@ -235,7 +235,7 @@ class Network:
             Obj: returns the Poissan generator object.
         """
         # Assert argument is valid
-        assert (time_id <= self.n_train_images), f"Type a value between 0 and {int(self.cx_n//self.SET_CX_NEURON)}."
+        # assert (time_id <= self.n_train_images), f"Type a value between 0 and {int(self.n_train_image)}."
         assert (time_id >= 0), f"Type a value higher than 0."
         assert isinstance(time_id, int), "Type an int value."
         
@@ -346,52 +346,7 @@ class Network:
                 nest.Connect(train_sign, self.TC_POP[i], syn_spec={"weight": WEIGHT_TRAIN_TC})
         
         # Display connection
-        print("... training signal successfully connected to the tc population.")
-    
-    def create_input_train_signal(self, time_id, feature_vector):
-        """
-        During the retrieval phase only the 30 kHz input to thalamic cell is provided, while the contextual signal is off.
-        
-        :param time_id: Parameter that defines the slicing of the cx population. For example, neuron_group_id=1 slices 
-                                from 0:20; neuron_group_id=2 slices from 20:40. Also, it defines the time_id for the function 
-                                create_context_signal, since we are inputting different-time signals to the sliced neuronal populations.
-        :param type: int
-        
-        :param feature vector: A binary list of the TC_POP size length (i.e., 324)
-        :type: list
-        """
-        # Assert argument is valid
-        assert (time_id <= self.n_train_images), f"Type a value between 0 and {int(self.cx_n//self.SET_CX_NEURON)}."
-        assert (time_id >= 0), f"Type a value higher than 0."
-        assert isinstance(time_id, int), "Type an int value."
-        
-        # Declare variables
-        TRAIN_RATE = 30000.0                              # Hz
-        SIGN_DUR = 200                                    # Duration of training signal in ms
-        WEIGHT_TRAIN_TC = 8                               # Weight of Poisson to tc population
-        time_start = time_id                              # Iterator generating the training signal
-        feature_vector=feature_vector                     # Feature vector from argument
-        time_start = time_id * SIGN_DUR * 2 + 1.0         # Set time start of Poisson generator
-        time_stop = time_start + SIGN_DUR - 1.0           # Set time stop of Poisson generator
-        
-        # Generate training signal
-        train_sign = nest.Create("poisson_generator")
-        
-        # Set frequencies
-        train_sign.set(rate=TRAIN_RATE, origin=time_start, stop=time_stop)
-        
-        # Display result
-        print("Training signal successfully created.")
-
-        # Connect training signal to neurons based on the feature vector
-        print("Connecting input to the tc population...")
-        for i, apply_input in enumerate(feature_vector):
-            if apply_input:
-                nest.Connect(train_sign, self.TC_POP[i], syn_spec={"weight": WEIGHT_TRAIN_TC})
-        
-        # Display connection
-        print("... training signal successfully connected to the tc population.")
-        
+        print("... training signal successfully connected to the tc population.")   
         
     def input_sleep(self):
         """
@@ -407,6 +362,8 @@ class Network:
         SLEEP_DUR = 600000.0                                # Sleep duration in ms
         NEW_WEIGHT_IN_CX = -0.5                             # Weight of the synapse between in -> cx population
         ALPHA_ASSYM = 3.0                                   # Alpha for the assymetric STDP plasticity stage
+        start_time = 18000                                  # Set start time
+        stop_time = start_time + SLEEP_DUR                  # Set stop time
         b = 60                                              # SFA parameter
         params_sleep = {"individual_spike_trains": False}   # False: the generator sends the same spike train to all of its targets
         
@@ -418,7 +375,7 @@ class Network:
         self.sleep_osc = nest.Create("sinusoidal_sleep")
         
         # Set frequencies
-        self.sleep_osc.set(rate=OSC_RATE, stop=SLEEP_DUR)
+        self.sleep_osc.set(rate=OSC_RATE, start=start_time, stop=stop_time)
         print("...done.")
                
         # Set the SFA parameters
@@ -439,7 +396,6 @@ class Network:
         # Connect sleep oscillation to the neurons
         print("Connecting input to the cortex populations...")
         nest.Connect(self.sleep_osc, self.cx_pop)
-        nest.Connect(self.sleep_osc, self.IN_POP)
         
         # Display connection
         print("... sleep oscillation signal successfully inputed to the cx and in populations (i.e., whole cortex).")      
