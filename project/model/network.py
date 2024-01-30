@@ -67,7 +67,7 @@ class Network:
         
         # Change V_peak and b params accordingly to the paper
         V_peak = nest.GetDefaults('aeif_cond_alpha')['V_th'] + 5 * nest.GetDefaults('aeif_cond_alpha')['Delta_T']
-        neuron_params = {"V_peak": V_peak, "b": 0.01}
+        neuron_params = {"b": 0.01, "V_peak": V_peak, "t_ref": 2.0}
 
         nest.SetDefaults('aeif_cond_alpha', neuron_params)
 
