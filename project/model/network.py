@@ -40,7 +40,7 @@ class Network:
         ALPHA_SYM = 1.0                         # Alpha of the symmetric STDP synapse
         
         # Declate set of cx neurons
-        self.SET_CX_NEURON = 20          # Groups of 20 neurons for each image in the training set.
+        self.SET_CX_NEURON = 20                 # Groups of 20 neurons for each image in the training set.
         
         # Store number of training images
         self.n_train_images = n_train_images
@@ -333,8 +333,7 @@ class Network:
         """
         # Variables
         WEIGHT_TRAIN_TC = 8                                         # Weight of Poisson to tc population
-        time_start = time_id                                           # Iterator generating the training signal
-        feature_vector=feature_vector                               # Feature vector from argument
+        time_start = time_id                                        # Iterator generating the training signal
         
         # Generate training signal
         train_sign = self.create_train_signal(time_start)
@@ -365,14 +364,10 @@ class Network:
         start_time = 18000                                  # Set start time
         stop_time = start_time + SLEEP_DUR                  # Set stop time
         b = 60                                              # SFA parameter
-        params_sleep = {"individual_spike_trains": False}   # False: the generator sends the same spike train to all of its targets
         
-        # Change the individual_spike_trains from True (default) to False
+        # # Create sleep oscillation
         print("Generating sleep oscillations...")
-        nest.CopyModel("sinusoidal_poisson_generator", "sinusoidal_sleep", params=params_sleep)
-        
-        # Create sleep oscillation
-        self.sleep_osc = nest.Create("sinusoidal_sleep")
+        self.sleep_osc = nest.Create("poisson_generator")
         
         # Set frequencies
         self.sleep_osc.set(rate=OSC_RATE, start=start_time, stop=stop_time)
