@@ -32,12 +32,11 @@ class Network:
         W_RE_RE = -1
         
         # Declare params of STDP synapses
-        W_MAX_CXCX = 150                        # Max weight value fo the cx-cx connection: 150
-        W_MAX_CXTC = 130                        # Max weight value fo the cx-tc connection: 130 
-        W_MAX_TCCX = 5.5                        # Max weight value fo the tc-cx connection 
-        W_INIT_INT = 1                          # Initial weight value for the cx-cx and cx-tc populations
-        W_INIT_FLOAT = 1.0                      # Initial weight value for the tc-cx population
-        ALPHA_SYM = 1.0                         # Alpha of the symmetric STDP synapse
+        W_MAX_CXCX = 150.0                        # Max weight value fo the cx-cx connection: 150
+        W_MAX_CXTC = 130.0                        # Max weight value fo the cx-tc connection: 130 
+        W_MAX_TCCX = 5.5                          # Max weight value fo the tc-cx connection 
+        W_INIT = 1.0                              # Initial weight value for the stdp synapses
+        ALPHA_SYM = 1.0                           # Alpha of the symmetric STDP synapse
         
         # Declate set of cx neurons
         self.SET_CX_NEURON = 20                 # Groups of 20 neurons for each image in the training set.
@@ -73,38 +72,70 @@ class Network:
 
         # Creating populations
         self.cx_pop = nest.Create('aeif_cond_alpha', self.cx_n)
-        self.IN_POP = nest.Create('aeif_cond_alpha', self.IN_N)
-        self.TC_POP = nest.Create('aeif_cond_alpha', self.TC_N)
-        self.RE_POP = nest.Create('aeif_cond_alpha', self.RE_N)
+        self.in_pop = nest.Create('aeif_cond_alpha', self.IN_N)
+        self.tc_pop = nest.Create('aeif_cond_alpha', self.TC_N)
+        self.re_pop = nest.Create('aeif_cond_alpha', self.RE_N)
         
         # Connect populations with static synapses
-        nest.Connect(self.IN_POP, self.cx_pop, syn_spec={"weight": W_IN_CX}) # inhibitory interneurons -> pyramidal neurons
-        nest.Connect(self.cx_pop, self.IN_POP, syn_spec={"weight": W_CX_IN}) # pyramidal neurons -> inhibitory interneurons
-        nest.Connect(self.TC_POP, self.RE_POP, syn_spec={"weight": W_TC_RE}) # thalamic relay -> reticular neurons
-        nest.Connect(self.RE_POP, self.TC_POP, syn_spec={"weight": W_RE_TC}) # reticular neurons -> thalamic relay
-        nest.Connect(self.IN_POP, self.IN_POP, syn_spec={"weight": W_IN_IN}) # inhibitory interneurons -> inhibitory interneuros
-        nest.Connect(self.RE_POP, self.RE_POP, syn_spec={"weight": W_RE_RE}) # reticular neurons -> reticular neurons
+        nest.Connect(self.in_pop, self.cx_pop, syn_spec={"weight": W_IN_CX}) # inhibitory interneurons -> pyramidal neurons
+        nest.Connect(self.cx_pop, self.in_pop, syn_spec={"weight": W_CX_IN}) # pyramidal neurons -> inhibitory interneurons
+        nest.Connect(self.tc_pop, self.re_pop, syn_spec={"weight": W_TC_RE}) # thalamic relay -> reticular neurons
+        nest.Connect(self.re_pop, self.tc_pop, syn_spec={"weight": W_RE_TC}) # reticular neurons -> thalamic relay
+        nest.Connect(self.in_pop, self.in_pop, syn_spec={"weight": W_IN_IN}) # inhibitory interneurons -> inhibitory interneuros
+        nest.Connect(self.re_pop, self.re_pop, syn_spec={"weight": W_RE_RE}) # reticular neurons -> reticular neurons
         
-        # Connect populations with STDP synapses
-        self.syn_dict_cxcx = {"synapse_model": "stdp_synapse", 
-                            "alpha": ALPHA_SYM,
-                            "weight": W_INIT_INT,
-                            "Wmax": W_MAX_CXCX}
+        # Create weight recorders for the STDP synapses
+        wr_cxcx = nest.Create("weight_recorder")      
+        wr_cxtc = nest.Create("weight_recorder")   
+        wr_tccx = nest.Create("weight_recorder")
+        
+        # Params for STDP synapses
+        #self.syn_dict_cxcx = {"synapse_model": "stdp_synapse", 
+                            #"alpha": ALPHA_SYM,
+                            #"weight": W_INIT,                              
+                            #"Wmax": W_MAX_CXCX,
+                            #"weight_recorder": wr_cxcx}
+        
+        self.syn_dict_cxcx = {"alpha": ALPHA_SYM,
+                            "weight": W_INIT,                              
+                            "Wmax": W_MAX_CXCX,
+                            "weight_recorder": wr_cxcx}
 
-        self.syn_dict_cxtc = {"synapse_model": "stdp_synapse", 
+        """self.syn_dict_cxtc = {"synapse_model": "stdp_synapse", 
                             "alpha": ALPHA_SYM,
-                            "weight": W_INIT_INT,
-                            "Wmax": W_MAX_CXTC}
+                            "weight": W_INIT,
+                            "Wmax": W_MAX_CXTC,
+                            "weight_recorder": wr_cxtc}"""
+        
+        self.syn_dict_cxtc = {"alpha": ALPHA_SYM,
+                            "weight": W_INIT,
+                            "Wmax": W_MAX_CXTC,
+                            "weight_recorder": wr_cxtc}
 
-        self.syn_dict_tccx = {"synapse_model": "stdp_synapse", 
+        """self.syn_dict_tccx = {"synapse_model": "stdp_synapse", 
                             "alpha": ALPHA_SYM,
-                            "weight": W_INIT_FLOAT,
-                            "Wmax": W_MAX_TCCX}
+                            "weight": W_INIT,
+                            "Wmax": W_MAX_TCCX,
+                            "weight_recorder": wr_tccx}"""
+        
+        self.syn_dict_tccx = {"alpha": ALPHA_SYM,
+                            "weight": W_INIT,
+                            "Wmax": W_MAX_TCCX,
+                            "weight_recorder": wr_tccx}
+        
+        # Copy STDP model
+        nest.CopyModel("stdp_synapse", "stdp_synapse_cxcx", self.syn_dict_cxcx)
+        nest.CopyModel("stdp_synapse", "stdp_synapse_cxtc", self.syn_dict_cxtc) 
+        nest.CopyModel("stdp_synapse", "stdp_synapse_tccx", self.syn_dict_tccx) 
 
         # Connect populations
-        nest.Connect(self.cx_pop, self.cx_pop, syn_spec=self.syn_dict_cxcx)         # Cx -> Cx
-        nest.Connect(self.cx_pop, self.TC_POP, syn_spec=self.syn_dict_cxtc)         # Cx -> Tc
-        nest.Connect(self.TC_POP, self.cx_pop, syn_spec=self.syn_dict_tccx)         # TC -> Cx
+        #nest.Connect(self.cx_pop, self.cx_pop, syn_spec=self.syn_dict_cxcx)         # Cx -> Cx
+        #nest.Connect(self.cx_pop, self.tc_pop, syn_spec=self.syn_dict_cxtc)         # Cx -> Tc
+        #nest.Connect(self.tc_pop, self.cx_pop, syn_spec=self.syn_dict_tccx)         # TC -> Cx
+        
+        nest.Connect(self.cx_pop, self.cx_pop, syn_spec="stdp_synapse_cxcx")         # Cx -> Cx
+        nest.Connect(self.cx_pop, self.tc_pop, syn_spec="stdp_synapse_cxtc")         # Cx -> Tc
+        nest.Connect(self.tc_pop, self.cx_pop, syn_spec="stdp_synapse_tccx")         # TC -> Cx        
     
     def create_context_signal(self, time_id): 
         """
@@ -314,7 +345,7 @@ class Network:
         
         # Connect them to the neurons
         print("Connecting input to the in population...")
-        nest.Connect(inhib_sign, self.IN_POP, syn_spec={"weight": WEIGHT_INH_IN})   
+        nest.Connect(inhib_sign, self.in_pop, syn_spec={"weight": WEIGHT_INH_IN})   
         
         # Display connection
         print("... inhibitory signal successfully connected to the in population.")     
@@ -328,7 +359,7 @@ class Network:
                                 create_context_signal, since we are inputting different-time signals to the sliced neuronal populations.
         :param type: int
         
-        :param feature vector: A binary list of the TC_POP size length (i.e., 324)
+        :param feature vector: A binary list of the tc_pop size length (i.e., 324)
         :type: list
         """
         # Variables
@@ -342,7 +373,7 @@ class Network:
         print("Connecting input to the tc population...")
         for i, apply_input in enumerate(feature_vector):
             if apply_input:
-                nest.Connect(train_sign, self.TC_POP[i], syn_spec={"weight": WEIGHT_TRAIN_TC})
+                nest.Connect(train_sign, self.tc_pop[i], syn_spec={"weight": WEIGHT_TRAIN_TC})
         
         # Display connection
         print("... training signal successfully connected to the tc population.")   
@@ -381,7 +412,7 @@ class Network:
         
         # Change connection weight W_in_cx to -0.5 and alpha to 3.0
         # Get Connections
-        syn_in_cx = nest.GetConnections(self.IN_POP, self.cx_pop, synapse_model='static_synapse')
+        syn_in_cx = nest.GetConnections(self.in_pop, self.cx_pop, synapse_model='static_synapse')
         syn_cx_cx = nest.GetConnections(self.cx_pop, self.cx_pop, synapse_model='stdp_synapse')
 
         # Apply the new parameters to the synapse
@@ -445,14 +476,14 @@ class Network:
         
         # Connect the multimeter to all populations
         nest.Connect(self.mult_cx, self.cx_pop)
-        nest.Connect(self.mult_in, self.IN_POP)
-        nest.Connect(self.mult_tc, self.TC_POP)
-        nest.Connect(self.mult_re, self.RE_POP)
+        nest.Connect(self.mult_in, self.in_pop)
+        nest.Connect(self.mult_tc, self.tc_pop)
+        nest.Connect(self.mult_re, self.re_pop)
 
         # Connect the spike_recorder to all populations
         nest.Connect(self.cx_pop, self.spikes_cx)
-        nest.Connect(self.IN_POP, self.spikes_in)
-        nest.Connect(self.TC_POP, self.spikes_tc)
-        nest.Connect(self.RE_POP, self.spikes_re)
+        nest.Connect(self.in_pop, self.spikes_in)
+        nest.Connect(self.tc_pop, self.spikes_tc)
+        nest.Connect(self.re_pop, self.spikes_re)
         
 
